@@ -8,70 +8,71 @@ import CommunityReports from './components/CommunityReports';
 import RecentReports from './components/RecentReports';
 import PoliceStations from './components/PoliceStations';
 import RiskAssessment from './components/RiskAssessment';
-import { fetchPoliceStations, fetchCrimeStats } from './utils/api';
-import { calculateRisk, getRiskExplanation } from './utils/riskCalculator';
-import { DELHI_DISTRICTS } from './utils/constants';
+import { getPoliceStations, getCrimeData } from './utils/api';
+import { checkRiskLevel } from './utils/riskCalculator';
+import { delhiDistricts } from './utils/constants';
 
-export default function App() {
-    const [incidents, setIncidents] = useState([]);
-    const [policeStations, setPoliceStations] = useState([]);
-    const [crimeStats, setCrimeStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [selectedDistrict, setSelectedDistrict] = useState('Central Delhi');
+export default function SafeZoneApp() {
+
+    const [userReports, setUserReports] = useState([]);
+    const [nearbyStations, setNearbyStations] = useState([]);
+    const [districtCrimeData, setDistrictCrimeData] = useState(null);
+    const [isPageLoading, setIsPageLoading] = useState(true);
+    const [chosenDistrict, setChosenDistrict] = useState('Central Delhi');
 
     useEffect(() => {
-        loadInitialData();
+        loadEverythingOnStart();
     }, []);
 
     useEffect(() => {
-        loadCrimeData();
-    }, [selectedDistrict]);
+        loadCrimeDataForDistrict();
+    }, [chosenDistrict]);
 
     useEffect(() => {
-        localStorage.setItem('safezone-delhi-incidents', JSON.stringify(incidents));
-    }, [incidents]);
+        localStorage.setItem('safezone-saved-reports', JSON.stringify(userReports));
+    }, [userReports]);
 
-    const loadInitialData = async () => {
-        setLoading(true);
-        
-        const stored = localStorage.getItem('safezone-delhi-incidents');
-        if (stored) {
-            setIncidents(JSON.parse(stored));
+    const loadEverythingOnStart = async () => {
+        setIsPageLoading(true);
+
+        const previouslySavedReports = localStorage.getItem('safezone-saved-reports');
+        if (previouslySavedReports) {
+            setUserReports(JSON.parse(previouslySavedReports));
         }
 
-        const stations = await fetchPoliceStations();
-        setPoliceStations(stations);
+        const stationList = await getPoliceStations();
+        setNearbyStations(stationList);
 
-        const stats = await fetchCrimeStats(selectedDistrict);
-        setCrimeStats(stats);
+        const crimeNumbers = await getCrimeData(chosenDistrict);
+        setDistrictCrimeData(crimeNumbers);
 
-        setLoading(false);
+        setIsPageLoading(false);
     };
 
-    const loadCrimeData = async () => {
-        const stats = await fetchCrimeStats(selectedDistrict);
-        setCrimeStats(stats);
+    const loadCrimeDataForDistrict = async () => {
+        const crimeNumbers = await getCrimeData(chosenDistrict);
+        setDistrictCrimeData(crimeNumbers);
     };
 
-    const handleRefresh = async () => {
-        setLoading(true);
-        const stations = await fetchPoliceStations();
-        setPoliceStations(stations);
-        await loadCrimeData();
-        setLoading(false);
+    const handleRefreshClick = async () => {
+        setIsPageLoading(true);
+        const stationList = await getPoliceStations();
+        setNearbyStations(stationList);
+        await loadCrimeDataForDistrict();
+        setIsPageLoading(false);
     };
 
-    const handleReportSubmit = (newIncident) => {
-        setIncidents([newIncident, ...incidents]);
+    const handleNewReportSubmit = (newReport) => {
+        setUserReports([newReport, ...userReports]);
     };
 
-    const handleDeleteIncident = (id) => {
-        setIncidents(incidents.filter(inc => inc.id !== id));
+    const handleDeleteReport = (reportId) => {
+        setUserReports(userReports.filter(report => report.id !== reportId));
     };
 
-    const risk = calculateRisk(crimeStats);
+    const currentRiskLevel = checkRiskLevel(districtCrimeData);
 
-    if (loading) {
+    if (isPageLoading) {
         return (
             <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
                 <div className="text-center">
@@ -85,7 +86,7 @@ export default function App() {
     return (
         <div className="dark min-h-screen bg-background text-foreground p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-                
+
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
                         <Shield className="w-10 h-10 text-blue-500" />
@@ -95,7 +96,7 @@ export default function App() {
                         </div>
                     </div>
                     <button
-                        onClick={handleRefresh}
+                        onClick={handleRefreshClick}
                         className="flex items-center gap-2 bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" />
@@ -106,35 +107,35 @@ export default function App() {
                 <div className="bg-card border border-border rounded-lg p-4 shadow-lg">
                     <label className="block mb-2">Select Delhi District</label>
                     <select
-                        value={selectedDistrict}
-                        onChange={(e) => setSelectedDistrict(e.target.value)}
+                        value={chosenDistrict}
+                        onChange={(e) => setChosenDistrict(e.target.value)}
                         className="w-full md:w-auto bg-input-background border border-border rounded-lg px-4 py-3"
                     >
-                        {DELHI_DISTRICTS.map(district => (
-                            <option key={district} value={district}>{district}</option>
+                        {delhiDistricts.map(districtName => (
+                            <option key={districtName} value={districtName}>{districtName}</option>
                         ))}
                     </select>
                 </div>
 
-                <RiskBanner 
-                    risk={risk} 
-                    selectedDistrict={selectedDistrict} 
-                    crimeStats={crimeStats} 
+                <RiskBanner
+                    riskLevel={currentRiskLevel}
+                    districtName={chosenDistrict}
+                    crimeData={districtCrimeData}
                 />
 
                 <EmergencyButtons />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <ReportIncident onSubmit={handleReportSubmit} />
-                        <CrimeStats crimeStats={crimeStats} selectedDistrict={selectedDistrict} />
-                        <CommunityReports incidents={incidents} />
-                        <RecentReports incidents={incidents} onDelete={handleDeleteIncident} />
+                        <ReportIncident onFormSubmit={handleNewReportSubmit} />
+                        <CrimeStats crimeData={districtCrimeData} districtName={chosenDistrict} />
+                        <CommunityReports allReports={userReports} />
+                        <RecentReports allReports={userReports} onDeleteReport={handleDeleteReport} />
                     </div>
 
                     <div className="space-y-6">
-                        <PoliceStations stations={policeStations} />
-                        <RiskAssessment risk={risk} selectedDistrict={selectedDistrict} crimeStats={crimeStats} />
+                        <PoliceStations stationList={nearbyStations} />
+                        <RiskAssessment riskLevel={currentRiskLevel} districtName={chosenDistrict} crimeData={districtCrimeData} />
                     </div>
                 </div>
             </div>

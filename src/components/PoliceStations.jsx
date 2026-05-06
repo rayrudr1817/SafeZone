@@ -1,15 +1,16 @@
 import { MapPin, Phone } from 'lucide-react';
 
-export default function PoliceStations({ stations }) {
+export default function PoliceStations({ stationList }) {
     return (
         <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
             <h2 className="text-2xl mb-4">Police Stations in Delhi</h2>
             <p className="text-sm text-muted-foreground mb-4">
-                Showing {stations.length} police stations (Real data from OpenStreetMap)
+                Showing {stationList.length} police stations (Real data from OpenStreetMap)
             </p>
             <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {stations.map((station) => (
+                {stationList.map((station) => (
                     <div key={station.id} className="bg-accent/30 p-4 rounded-lg">
+
                         <div className="flex items-start gap-2 mb-2">
                             <MapPin className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
@@ -18,6 +19,7 @@ export default function PoliceStations({ stations }) {
                                 <div className="text-xs text-muted-foreground truncate">{station.address}</div>
                             </div>
                         </div>
+
                         <div className="flex gap-2 mt-3">
                             <a
                                 href="tel:100"
