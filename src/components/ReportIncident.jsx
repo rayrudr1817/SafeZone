@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { delhiDistricts } from '../utils/constants';
 
-export default function ReportIncident({ onFormSubmit }) {
+export default function ReportIncident({ onFormSubmit, crimeTypeList, districtList }) {
 
     const [formValues, setFormValues] = useState({
-        crimeType: 'Theft',
+        crimeType: crimeTypeList[0] || 'Theft',
         whatHappened: '',
         reportDate: new Date().toISOString().split('T')[0],
-        location: 'Central Delhi',
+        location: districtList[0] || 'Central Delhi',
     });
 
     const handleFormSubmit = (e) => {
@@ -38,7 +37,7 @@ export default function ReportIncident({ onFormSubmit }) {
                         onChange={(e) => setFormValues({ ...formValues, location: e.target.value })}
                         className="w-full bg-input-background border border-border rounded-lg px-4 py-3"
                     >
-                        {delhiDistricts.map(districtName => (
+                        {districtList.map(districtName => (
                             <option key={districtName} value={districtName}>{districtName}</option>
                         ))}
                     </select>
@@ -51,10 +50,9 @@ export default function ReportIncident({ onFormSubmit }) {
                         onChange={(e) => setFormValues({ ...formValues, crimeType: e.target.value })}
                         className="w-full bg-input-background border border-border rounded-lg px-4 py-3"
                     >
-                        <option>Theft</option>
-                        <option>Harassment</option>
-                        <option>Assault</option>
-                        <option>Other</option>
+                        {crimeTypeList.map(typeName => (
+                            <option key={typeName} value={typeName}>{typeName}</option>
+                        ))}
                     </select>
                 </div>
 

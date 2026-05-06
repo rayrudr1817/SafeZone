@@ -8,9 +8,8 @@ import CommunityReports from './components/CommunityReports';
 import RecentReports from './components/RecentReports';
 import PoliceStations from './components/PoliceStations';
 import RiskAssessment from './components/RiskAssessment';
-import { getPoliceStations, getCrimeData } from './utils/api';
+import { getPoliceStations, getCrimeData, getDistrictNames, getCrimeTypes } from './utils/api';
 import { checkRiskLevel } from './utils/riskCalculator';
-import { delhiDistricts } from './utils/constants';
 
 export default function SafeZoneApp() {
 
@@ -19,6 +18,10 @@ export default function SafeZoneApp() {
     const [districtCrimeData, setDistrictCrimeData] = useState(null);
     const [isPageLoading, setIsPageLoading] = useState(true);
     const [chosenDistrict, setChosenDistrict] = useState('Central Delhi');
+
+    // These two now come from API instead of constants.js
+    const [districtList, setDistrictList] = useState([]);
+    const [crimeTypeList, setCrimeTypeList] = useState([]);
 
     useEffect(() => {
         loadEverythingOnStart();
@@ -39,6 +42,13 @@ export default function SafeZoneApp() {
         if (previouslySavedReports) {
             setUserReports(JSON.parse(previouslySavedReports));
         }
+
+        // Fetch districts and crime types from API
+        const fetchedDistricts = await getDistrictNames();
+        setDistrictList(fetchedDistricts);
+
+        const fetchedCrimeTypes = await getCrimeTypes();
+        setCrimeTypeList(fetchedCrimeTypes);
 
         const stationList = await getPoliceStations();
         setNearbyStations(stationList);
@@ -111,7 +121,7 @@ export default function SafeZoneApp() {
                         onChange={(e) => setChosenDistrict(e.target.value)}
                         className="w-full md:w-auto bg-input-background border border-border rounded-lg px-4 py-3"
                     >
-                        {delhiDistricts.map(districtName => (
+                        {districtList.map(districtName => (
                             <option key={districtName} value={districtName}>{districtName}</option>
                         ))}
                     </select>
@@ -127,7 +137,7 @@ export default function SafeZoneApp() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <ReportIncident onFormSubmit={handleNewReportSubmit} />
+                        <ReportIncident onFormSubmit={handleNewReportSubmit} crimeTypeList={crimeTypeList} districtList={districtList} />
                         <CrimeStats crimeData={districtCrimeData} districtName={chosenDistrict} />
                         <CommunityReports allReports={userReports} />
                         <RecentReports allReports={userReports} onDeleteReport={handleDeleteReport} />
