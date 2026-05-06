@@ -19,7 +19,6 @@ export default function SafeZoneApp() {
     const [isPageLoading, setIsPageLoading] = useState(true);
     const [chosenDistrict, setChosenDistrict] = useState('Central Delhi');
 
-    // These two now come from API instead of constants.js
     const [districtList, setDistrictList] = useState([]);
     const [crimeTypeList, setCrimeTypeList] = useState([]);
 
@@ -43,7 +42,6 @@ export default function SafeZoneApp() {
             setUserReports(JSON.parse(previouslySavedReports));
         }
 
-        // Fetch districts and crime types from API
         const fetchedDistricts = await getDistrictNames();
         setDistrictList(fetchedDistricts);
 
