@@ -2,40 +2,28 @@ import { Trash2 } from 'lucide-react';
 
 export default function RecentReports({ allReports, onDeleteReport }) {
     return (
-        <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl mb-4">Recent Community Reports</h2>
-
+        <div className="safe-card">
+            <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text-primary)' }}>
+                📋 Recent Community Reports
+            </h2>
             {allReports.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                    No community reports yet. Be the first to report an incident.
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0', fontSize: '0.88rem' }}>
+                    No reports yet. Be the first to report an incident.
                 </p>
             ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {allReports.map((singleReport) => (
-                        <div
-                            key={singleReport.id}
-                            className="bg-accent/30 border border-border p-4 rounded-lg flex items-start justify-between gap-4"
-                        >
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="bg-red-600 text-white px-2 py-1 rounded text-sm">
-                                        {singleReport.type}
-                                    </span>
-                                    <span className="bg-blue-900/50 text-white px-2 py-1 rounded text-sm">
-                                        {singleReport.area}
-                                    </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: 380, overflowY: 'auto' }}>
+                    {allReports.map(report => (
+                        <div key={report.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.85rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+                                    <span className="badge-red">{report.type}</span>
+                                    <span className="badge-blue">{report.area}</span>
                                 </div>
-                                <p className="text-sm mb-1">{singleReport.description}</p>
-                                <span className="text-xs text-muted-foreground">
-                                    {singleReport.date} • {singleReport.time}
-                                </span>
+                                <p style={{ fontSize: '0.83rem', color: 'var(--text-primary)', marginBottom: 4 }}>{report.description}</p>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{report.date} · {report.time}</span>
                             </div>
-
-                            <button
-                                onClick={() => onDeleteReport(singleReport.id)}
-                                className="text-destructive hover:text-destructive-foreground p-2 hover:bg-destructive/20 rounded transition-colors"
-                            >
-                                <Trash2 className="w-5 h-5" />
+                            <button onClick={() => onDeleteReport(report.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.25rem', borderRadius: 6, flexShrink: 0 }}>
+                                <Trash2 size={16} />
                             </button>
                         </div>
                     ))}

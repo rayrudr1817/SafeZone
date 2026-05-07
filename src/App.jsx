@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, RefreshCw } from 'lucide-react';
+import { Shield, RefreshCw, Moon, Sun, Navigation, MapPin } from 'lucide-react';
 import RiskBanner from './components/RiskBanner';
 import EmergencyButtons from './components/EmergencyButtons';
 import ReportIncident from './components/ReportIncident';
@@ -8,144 +8,143 @@ import CommunityReports from './components/CommunityReports';
 import RecentReports from './components/RecentReports';
 import PoliceStations from './components/PoliceStations';
 import RiskAssessment from './components/RiskAssessment';
-import { getPoliceStations, getCrimeData, getDistrictNames, getCrimeTypes } from './utils/api';
+import { getPoliceStations, getCrimeData, getDistrictNames, getCrimeTypes, getDistrictFromCoords } from './utils/api';
 import { checkRiskLevel } from './utils/riskCalculator';
 
 export default function SafeZoneApp() {
-
-    const [userReports, setUserReports] = useState([]);
-    const [nearbyStations, setNearbyStations] = useState([]);
-    const [districtCrimeData, setDistrictCrimeData] = useState(null);
-    const [isPageLoading, setIsPageLoading] = useState(true);
-    const [chosenDistrict, setChosenDistrict] = useState('Central Delhi');
-
+    const [reports, setReports]           = useState([]);
+    const [stations, setStations]         = useState([]);
+    const [crimeData, setCrimeData]       = useState(null);
+    const [loading, setLoading]           = useState(true);
+    const [locating, setLocating]         = useState(false);
+    const [district, setDistrict]         = useState('Central Delhi');
     const [districtList, setDistrictList] = useState([]);
-    const [crimeTypeList, setCrimeTypeList] = useState([]);
+    const [crimeTypes, setCrimeTypes]     = useState([]);
+    const [darkMode, setDarkMode]         = useState(true);
 
+    useEffect(() => { init(); }, []);
+    useEffect(() => { loadCrimeData(); }, [district]);
     useEffect(() => {
-        loadEverythingOnStart();
-    }, []);
+        localStorage.setItem('safezone-reports', JSON.stringify(reports));
+    }, [reports]);
 
-    useEffect(() => {
-        loadCrimeDataForDistrict();
-    }, [chosenDistrict]);
-
-    useEffect(() => {
-        localStorage.setItem('safezone-saved-reports', JSON.stringify(userReports));
-    }, [userReports]);
-
-    const loadEverythingOnStart = async () => {
-        setIsPageLoading(true);
-
-        const previouslySavedReports = localStorage.getItem('safezone-saved-reports');
-        if (previouslySavedReports) {
-            setUserReports(JSON.parse(previouslySavedReports));
-        }
-
-        const fetchedDistricts = await getDistrictNames();
-        setDistrictList(fetchedDistricts);
-
-        const fetchedCrimeTypes = await getCrimeTypes();
-        setCrimeTypeList(fetchedCrimeTypes);
-
-        const stationList = await getPoliceStations();
-        setNearbyStations(stationList);
-
-        const crimeNumbers = await getCrimeData(chosenDistrict);
-        setDistrictCrimeData(crimeNumbers);
-
-        setIsPageLoading(false);
+    const init = async () => {
+        setLoading(true);
+        const saved = localStorage.getItem('safezone-reports');
+        if (saved) setReports(JSON.parse(saved));
+        const [districts, types, stationList, crime] = await Promise.all([
+            getDistrictNames(),
+            getCrimeTypes(),
+            getPoliceStations(),
+            getCrimeData('Central Delhi'),
+        ]);
+        setDistrictList(districts);
+        setCrimeTypes(types);
+        setStations(stationList);
+        setCrimeData(crime);
+        setLoading(false);
     };
 
-    const loadCrimeDataForDistrict = async () => {
-        const crimeNumbers = await getCrimeData(chosenDistrict);
-        setDistrictCrimeData(crimeNumbers);
+    const loadCrimeData = async () => {
+        const data = await getCrimeData(district);
+        setCrimeData(data);
     };
 
-    const handleRefreshClick = async () => {
-        setIsPageLoading(true);
-        const stationList = await getPoliceStations();
-        setNearbyStations(stationList);
-        await loadCrimeDataForDistrict();
-        setIsPageLoading(false);
+    const handleRefresh = async () => {
+        setLoading(true);
+        const [stationList, crime] = await Promise.all([getPoliceStations(), getCrimeData(district)]);
+        setStations(stationList);
+        setCrimeData(crime);
+        setLoading(false);
     };
 
-    const handleNewReportSubmit = (newReport) => {
-        setUserReports([newReport, ...userReports]);
-    };
-
-    const handleDeleteReport = (reportId) => {
-        setUserReports(userReports.filter(report => report.id !== reportId));
-    };
-
-    const currentRiskLevel = checkRiskLevel(districtCrimeData);
-
-    if (isPageLoading) {
-        return (
-            <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-lg">Loading Delhi crime data...</p>
-                </div>
-            </div>
+    const handleUseMyLocation = () => {
+        if (!navigator.geolocation) return alert('Geolocation not supported by your browser.');
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const detected = await getDistrictFromCoords(pos.coords.latitude, pos.coords.longitude);
+                setDistrict(detected);
+                setLocating(false);
+            },
+            () => {
+                alert('Could not get your location. Please allow location access.');
+                setLocating(false);
+            }
         );
-    }
+    };
+
+    const riskLevel = checkRiskLevel(crimeData);
+
+    if (loading) return (
+        <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ width: 44, height: 44, border: '4px solid var(--accent-blue)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <p style={{ color: 'var(--text-secondary)', fontFamily: 'Rajdhani, sans-serif', fontSize: '1.1rem' }}>Loading SafeZone Delhi...</p>
+        </div>
+    );
 
     return (
-        <div className="dark min-h-screen bg-background text-foreground p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className={darkMode ? '' : 'light-mode'} style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', padding: '1.5rem' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-3">
-                        <Shield className="w-10 h-10 text-blue-500" />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <Shield size={36} style={{ color: '#2563eb' }} />
                         <div>
-                            <h1 className="text-4xl">SafeZone Delhi</h1>
-                            <span className="text-muted-foreground">Real-time Crime Awareness & Safety Platform</span>
+                            <h1 style={{ fontSize: '2rem', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, lineHeight: 1 }}>SafeZone Delhi</h1>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Real-time Crime Awareness & Safety Platform</span>
                         </div>
                     </div>
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                        <button onClick={handleRefresh} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.82rem' }}>
+                            <RefreshCw size={14} /> Refresh
+                        </button>
+                        <button onClick={() => setDarkMode(d => !d)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.55rem 0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="safe-card" style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5, letterSpacing: '0.05em' }}>
+                            SELECT DISTRICT
+                        </label>
+                        <select
+                            className="safe-input"
+                            value={district}
+                            onChange={e => setDistrict(e.target.value)}
+                        >
+                            {districtList.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                    </div>
                     <button
-                        onClick={handleRefreshClick}
-                        className="flex items-center gap-2 bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg transition-colors"
+                        onClick={handleUseMyLocation}
+                        disabled={locating}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: locating ? 'var(--bg-secondary)' : '#2563eb', border: 'none', borderRadius: 8, padding: '0.72rem 1.1rem', color: 'white', cursor: locating ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', opacity: locating ? 0.7 : 1 }}
                     >
-                        <RefreshCw className="w-4 h-4" />
-                        Refresh Data
+                        <Navigation size={15} />
+                        {locating ? 'Detecting...' : 'Use My Location'}
                     </button>
                 </div>
 
-                <div className="bg-card border border-border rounded-lg p-4 shadow-lg">
-                    <label className="block mb-2">Select Delhi District</label>
-                    <select
-                        value={chosenDistrict}
-                        onChange={(e) => setChosenDistrict(e.target.value)}
-                        className="w-full md:w-auto bg-input-background border border-border rounded-lg px-4 py-3"
-                    >
-                        {districtList.map(districtName => (
-                            <option key={districtName} value={districtName}>{districtName}</option>
-                        ))}
-                    </select>
-                </div>
+                <RiskBanner riskLevel={riskLevel} districtName={district} crimeData={crimeData} />
 
-                <RiskBanner
-                    riskLevel={currentRiskLevel}
-                    districtName={chosenDistrict}
-                    crimeData={districtCrimeData}
-                />
+                <EmergencyButtons currentDistrict={district} />
 
-                <EmergencyButtons />
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
-                        <ReportIncident onFormSubmit={handleNewReportSubmit} crimeTypeList={crimeTypeList} districtList={districtList} />
-                        <CrimeStats crimeData={districtCrimeData} districtName={chosenDistrict} />
-                        <CommunityReports allReports={userReports} />
-                        <RecentReports allReports={userReports} onDeleteReport={handleDeleteReport} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.25rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <ReportIncident onFormSubmit={r => setReports(prev => [r, ...prev])} crimeTypeList={crimeTypes} districtList={districtList} />
+                        <CrimeStats crimeData={crimeData} districtName={district} />
+                        <CommunityReports allReports={reports} />
+                        <RecentReports allReports={reports} onDeleteReport={id => setReports(prev => prev.filter(r => r.id !== id))} />
                     </div>
-
-                    <div className="space-y-6">
-                        <PoliceStations stationList={nearbyStations} />
-                        <RiskAssessment riskLevel={currentRiskLevel} districtName={chosenDistrict} crimeData={districtCrimeData} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <PoliceStations stationList={stations} />
+                        <RiskAssessment riskLevel={riskLevel} districtName={district} crimeData={crimeData} />
                     </div>
                 </div>
+
             </div>
         </div>
     );

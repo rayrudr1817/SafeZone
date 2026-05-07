@@ -1,28 +1,21 @@
 import { getRiskMessage } from '../utils/riskCalculator';
 
 export default function RiskAssessment({ riskLevel, districtName, crimeData }) {
-
-    const borderColor =
-        riskLevel.label === 'High Risk' ? 'border-red-600' :
-        riskLevel.label === 'Moderate Risk' ? 'border-orange-600' :
-        'border-green-600';
+    const borderColor = riskLevel.label === 'High Risk' ? '#ef4444' : riskLevel.label === 'Moderate Risk' ? '#f97316' : '#22c55e';
 
     return (
-        <div className={`bg-card border-2 ${borderColor} rounded-lg p-6 shadow-lg`}>
-            <h2 className="text-2xl mb-3">Risk Assessment</h2>
-
-            <div className={`${riskLevel.textColor} mb-2 text-lg`}>
+        <div className="safe-card" style={{ borderColor }}>
+            <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+                🛡 Risk Assessment
+            </h2>
+            <div style={{ color: borderColor, fontSize: '1.1rem', fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', marginBottom: '0.5rem' }}>
                 {riskLevel.emoji} {riskLevel.label}
             </div>
-
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                 {getRiskMessage(riskLevel, districtName, crimeData?.totalCrimes || 0)}
             </p>
-
-            <div className="mt-4 pt-4 border-t border-border">
-                <div className="text-xs text-muted-foreground">
-                    Last updated: {new Date().toLocaleString()}
-                </div>
+            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                Last updated: {new Date().toLocaleString()}
             </div>
         </div>
     );

@@ -1,56 +1,42 @@
 export default function CommunityReports({ allReports }) {
-
-    const reportCounts = {
-        total: allReports.length,
-        theft: allReports.filter(report => report.type === 'Theft').length,
-        harassment: allReports.filter(report => report.type === 'Harassment').length,
-        assault: allReports.filter(report => report.type === 'Assault').length,
-        other: allReports.filter(report => report.type === 'Other').length,
+    const counts = {
+        total:      allReports.length,
+        theft:      allReports.filter(r => r.type?.startsWith('Theft')).length,
+        harassment: allReports.filter(r => r.type?.startsWith('Harassment')).length,
+        assault:    allReports.filter(r => r.type?.startsWith('Assault')).length,
+        other:      allReports.filter(r => !['Theft','Harassment','Assault'].some(t => r.type?.startsWith(t))).length,
     };
 
-    const mostReportedCrime = Object.entries(reportCounts)
-        .filter(([typeName]) => typeName !== 'total')
-        .sort(([, countA], [, countB]) => countB - countA)[0];
+    const topType = Object.entries(counts)
+        .filter(([k]) => k !== 'total')
+        .sort(([,a],[,b]) => b - a)[0];
+
+    const boxes = [
+        { label: 'User Reports',   value: counts.total,      color: '#3b82f6' },
+        { label: 'Theft',          value: counts.theft,      color: '#ef4444' },
+        { label: 'Harassment',     value: counts.harassment, color: '#f97316' },
+        { label: 'Assault',        value: counts.assault,    color: '#a855f7' },
+        { label: 'Other',          value: counts.other,      color: '#64748b' },
+    ];
 
     return (
-        <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl mb-4">Community Reports</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
-                <div className="bg-accent/50 p-4 rounded-lg">
-                    <div className="text-3xl mb-1">{reportCounts.total}</div>
-                    <div className="text-sm text-muted-foreground">User Reports</div>
-                </div>
-
-                <div className="bg-red-900/30 p-4 rounded-lg">
-                    <div className="text-3xl mb-1">{reportCounts.theft}</div>
-                    <div className="text-sm text-muted-foreground">Theft Reports</div>
-                </div>
-
-                <div className="bg-orange-900/30 p-4 rounded-lg">
-                    <div className="text-3xl mb-1">{reportCounts.harassment}</div>
-                    <div className="text-sm text-muted-foreground">Harassment</div>
-                </div>
-
-                <div className="bg-purple-900/30 p-4 rounded-lg">
-                    <div className="text-3xl mb-1">{reportCounts.assault}</div>
-                    <div className="text-sm text-muted-foreground">Assault</div>
-                </div>
-
-                <div className="bg-blue-900/30 p-4 rounded-lg">
-                    <div className="text-3xl mb-1">{reportCounts.other}</div>
-                    <div className="text-sm text-muted-foreground">Other</div>
-                </div>
-
-                <div className="bg-green-900/30 p-4 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">Most Reported</div>
-                    <div className="text-xl">
-                        {mostReportedCrime
-                            ? mostReportedCrime[0].charAt(0).toUpperCase() + mostReportedCrime[0].slice(1)
-                            : 'N/A'}
+        <div className="safe-card">
+            <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text-primary)' }}>
+                👥 Community Reports
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.75rem' }}>
+                {boxes.map(b => (
+                    <div key={b.label} className="stat-box" style={{ borderLeft: `3px solid ${b.color}` }}>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 700, color: b.color, fontFamily: 'Rajdhani, sans-serif' }}>{b.value}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{b.label}</div>
+                    </div>
+                ))}
+                <div className="stat-box" style={{ borderLeft: '3px solid #22c55e' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>MOST REPORTED</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', color: '#22c55e' }}>
+                        {topType ? topType[0].charAt(0).toUpperCase() + topType[0].slice(1) : 'N/A'}
                     </div>
                 </div>
-
             </div>
         </div>
     );

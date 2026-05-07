@@ -1,87 +1,86 @@
 import { useState } from 'react';
 
 export default function ReportIncident({ onFormSubmit, crimeTypeList, districtList }) {
-
-    const [formValues, setFormValues] = useState({
+    const [form, setForm] = useState({
         crimeType: crimeTypeList[0] || 'Theft',
-        whatHappened: '',
-        reportDate: new Date().toISOString().split('T')[0],
-        location: districtList[0] || 'Central Delhi',
+        otherDetail: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        area: districtList[0] || 'Central Delhi',
     });
 
-    const handleFormSubmit = (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
-
-        const newReport = {
+        const finalType = form.crimeType === 'Other' && form.otherDetail.trim()
+            ? `Other: ${form.otherDetail.trim()}`
+            : form.crimeType;
+        onFormSubmit({
             id: Date.now().toString(),
-            type: formValues.crimeType,
-            description: formValues.whatHappened,
-            date: formValues.reportDate,
+            type: finalType,
+            description: form.description,
+            date: form.date,
             time: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
-            area: formValues.location,
-        };
-
-        onFormSubmit(newReport);
-        setFormValues({ ...formValues, whatHappened: '' });
+            area: form.area,
+        });
+        setForm(f => ({ ...f, description: '', otherDetail: '' }));
     };
 
+    const label = { display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 5, letterSpacing: '0.05em' };
+
     return (
-        <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl mb-4">Report an Incident</h2>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-
-                <div>
-                    <label className="block mb-2">Area/District</label>
-                    <select
-                        value={formValues.location}
-                        onChange={(e) => setFormValues({ ...formValues, location: e.target.value })}
-                        className="w-full bg-input-background border border-border rounded-lg px-4 py-3"
-                    >
-                        {districtList.map(districtName => (
-                            <option key={districtName} value={districtName}>{districtName}</option>
-                        ))}
-                    </select>
+        <div className="safe-card">
+            <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1.25rem' }}>
+                📝 Report an Incident
+            </h2>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                        <label style={label}>AREA / DISTRICT</label>
+                        <select className="safe-input" value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))}>
+                            {districtList.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label style={label}>CRIME TYPE</label>
+                        <select className="safe-input" value={form.crimeType} onChange={e => setForm(f => ({ ...f, crimeType: e.target.value, otherDetail: '' }))}>
+                            {crimeTypeList.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
                 </div>
 
-                <div>
-                    <label className="block mb-2">Crime Type</label>
-                    <select
-                        value={formValues.crimeType}
-                        onChange={(e) => setFormValues({ ...formValues, crimeType: e.target.value })}
-                        className="w-full bg-input-background border border-border rounded-lg px-4 py-3"
-                    >
-                        {crimeTypeList.map(typeName => (
-                            <option key={typeName} value={typeName}>{typeName}</option>
-                        ))}
-                    </select>
-                </div>
+                {form.crimeType === 'Other' && (
+                    <div>
+                        <label style={{ ...label, color: '#fb923c' }}>SPECIFY TYPE</label>
+                        <input
+                            className="safe-input"
+                            placeholder="e.g. Vandalism, Fraud, Stalking..."
+                            value={form.otherDetail}
+                            onChange={e => setForm(f => ({ ...f, otherDetail: e.target.value }))}
+                            style={{ borderColor: 'rgba(249,115,22,0.4)' }}
+                            required
+                        />
+                    </div>
+                )}
 
                 <div>
-                    <label className="block mb-2">Description</label>
+                    <label style={label}>DESCRIPTION</label>
                     <textarea
-                        value={formValues.whatHappened}
-                        onChange={(e) => setFormValues({ ...formValues, whatHappened: e.target.value })}
-                        className="w-full bg-input-background border border-border rounded-lg px-4 py-3 h-24 resize-none"
-                        placeholder="Describe the incident..."
+                        className="safe-input"
+                        style={{ minHeight: 85, resize: 'vertical' }}
+                        placeholder="Describe what happened..."
+                        value={form.description}
+                        onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         required
                     />
                 </div>
 
                 <div>
-                    <label className="block mb-2">Date</label>
-                    <input
-                        type="date"
-                        value={formValues.reportDate}
-                        onChange={(e) => setFormValues({ ...formValues, reportDate: e.target.value })}
-                        className="w-full bg-input-background border border-border rounded-lg px-4 py-3"
-                    />
+                    <label style={label}>DATE</label>
+                    <input type="date" className="safe-input" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
                 </div>
 
-                <button
-                    type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition-colors"
-                >
-                    Submit Report
+                <button type="submit" style={{ background: 'var(--accent-blue)', border: 'none', borderRadius: 8, padding: '0.85rem', color: 'white', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.05em', cursor: 'pointer' }}>
+                    SUBMIT REPORT
                 </button>
             </form>
         </div>
